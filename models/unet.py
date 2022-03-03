@@ -9,7 +9,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torchstat import stat
+from utils.common import print_models
+from tensorboardX import SummaryWriter
 
 class DoubleConv(nn.Module):
     """结构：[convolution => [BN] => ReLU] * 2
@@ -56,24 +58,38 @@ class Up(nn.Module):
             self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         else:
             # 使用反卷积的形式上采样
-            self.up = nn.ConvTranspose2d(in_channels=out_channels // 2, out_channels=in_channels // 2, kernel_size=2,
+            self.up = nn.ConvTranspose2d(in_channels=in_channels // 2, out_channels=in_channels // 2, kernel_size=2,
                                          stride=2)
 
         self.conv = DoubleConv(in_channels, out_channels)
 
     def forward(self, x1, x2):
         x1 = self.up(x1)
+        # 通过torch.cat连接两个tensor
+        diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
+        diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
+        x1 = F.pad(x1, pad=[diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+        x = torch.cat([x2, x1], dim=1)
 
-        return x
+        return self.conv(x)
 
 
-class unet(nn.Module):
+class Outc(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(Outc, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)  # 大小不变
+
+    def forward(self, x):
+        return self.conv(x)
+
+
+class Unet(nn.Module):
     """实现最基本的unet结构"""
 
-    def __int__(self, in_channels, out_labels, training=True):
-        super(unet, self).__init__()
+    def __init__(self, in_channels, n_labels, training=True):
+        super(Unet, self).__init__()
         self.in_channels = in_channels
-        self.out_labels = out_labels
+        self.n_labels = n_labels
         self.training = training
 
         self.inc = DoubleConv(in_channels=self.in_channels, out_channels=64)
@@ -82,43 +98,33 @@ class unet(nn.Module):
         self.down3 = Down(in_channels=256, out_channels=512)
         self.down4 = Down(in_channels=512, out_channels=512)
 
-    def forward(self, x):
+        self.up1 = Up(in_channels=1024, out_channels=256)
+        self.up2 = Up(in_channels=512, out_channels=128)
+        self.up3 = Up(in_channels=256, out_channels=64)
+        self.up4 = Up(in_channels=128, out_channels=64)
 
-        return x
+        self.outc = Outc(in_channels=64, out_channels=self.n_labels)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        logits = self.outc(x)
+        return logits
 
 
 if __name__ == "__main__":
     x = torch.randn((1, 3, 512, 512))
-    inc = DoubleConv(3, 64)
-    down1 = Down(in_channels=64, out_channels=128)
-    down2 = Down(in_channels=128, out_channels=256)
-    down3 = Down(in_channels=256, out_channels=512)
-    down4 = Down(in_channels=512, out_channels=512)
-    x1 = inc(x)
-    x2 = down1(x1)
-    x3 = down2(x2)
-    x4 = down3(x3)
-    x5 = down4(x4)
+    net = Unet(in_channels=3, n_labels=17)
+    # with SummaryWriter("runs_models/unet") as w:
+    #     w.add_graph(net, x)
+    print_models(net)
+    print(stat(net, (3,512,512)))
 
-    up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-
-    print("x1:", x1.shape)
-    print("x2:", x2.shape)
-    print("x3:", x3.shape)
-    print("x4:", x4.shape)
-    print("x5:", x5.shape)
-
-    x5 = up(x5)
-    print("x5_up:", x5.shape)
-
-
-    diffY = torch.tensor([x4.size()[2]-x5.size()[2]])
-    diffX = torch.tensor([x4.size()[3]-x5.size()[3]])
-    print(diffY, diffX)
-
-    x6  = torch.cat([x4, x5],dim=1)
-    print("x6：",x6.shape)
-
-    # net = Down(3, 64)
-    # net = nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=2, stride=2)  # 就是求卷积的逆操作
-    # print(net(x).shape)

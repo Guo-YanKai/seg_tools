@@ -8,7 +8,7 @@
 
 from torch.nn import functional as F
 
-class dataset():
+class CTdataset():
     def __int__(self):
         self.a = 1
 
@@ -24,5 +24,5 @@ class dataset():
 
 if __name__ =="__main__":
     # 测试数据
-    data = dataset()
+    data = CTdataset()
 

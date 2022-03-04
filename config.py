@@ -26,9 +26,8 @@ parser.add_argument("--batch_size", type=int, default=8, help="batch size")
 
 # 训练过程的参数
 parser.add_argument("--epochs", type=int, default=100, help="number of epochs to train")
-parser.add_argument("--lr", type=float, default=0.001,help="learning rate")
+parser.add_argument("--lr", type=float, default=0.001, help="learning rate")
 parser.add_argument("--early-stop", type=int, default=30, help="early stopping")
-
 
 args = parser.parse_args()
 # print(args)

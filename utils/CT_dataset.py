@@ -62,25 +62,8 @@ class BasicDataset(Dataset):
         return len(self.image_names)
 
 
-def split_data_val(dataset, args, shuffle=True):
-    print("total sample:", len(dataset))
-    valid_rate = args.valid_rate
-    data_size = len(dataset)
-    indices = list(range(data_size))  # 生成索引
-    split = int(np.floor(valid_rate * data_size))  # np.floor返回不大于输入参数的最大整数
-    if shuffle:
-        np.random.seed(args.seed)
-        np.random.shuffle(indices)  # 根据随机种子打散索引
-    train_indices, val_indices = indices[split:], indices[:split]
-
-    # 生成数据采样器和加载器
-    train_sample = SubsetRandomSampler(train_indices)
-    val_sample = SubsetRandomSampler(val_indices)
-    print(f" train sample: {len(train_indices)},  val sample: {len(val_indices)}")
-    return train_sample, val_sample
-
-
 from config import args
+from utils.common import split_data_val
 
 if __name__ == "__main__":
     # 测试数据

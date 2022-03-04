@@ -28,7 +28,7 @@ class BasicDataset():
         self.transform  = Compose([
             Resize(0.5),
             RandomHorizontalFlip(0.5), # 以概率0.5随机水平翻转。
-            ToTensor(), # 归一化为：将取值范围[0,255]的Image图像或(H,W,C)的array转换为【C,H,W】取值范围[0,1.0]的float tensor
+            ToTensor(), # 归一化为：将取值范围[0,255]的Image图像或(H,W,C)的array ===>【C,H,W】取值范围[0,1.0]的float tensor
             # Normalize(mean=, std=)  # 这里是标准化，是原始数据的均值和方差
         ])
 

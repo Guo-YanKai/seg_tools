@@ -88,11 +88,10 @@ class Outc(nn.Module):
 class Unet(nn.Module):
     """实现最基本的unet结构"""
 
-    def __init__(self, in_channels, n_labels, training=True):
+    def __init__(self, in_channels, n_labels):
         super(Unet, self).__init__()
         self.in_channels = in_channels
         self.n_labels = n_labels
-        self.training = training
 
         self.inc = DoubleConv(in_channels=self.in_channels, out_channels=64)
         self.down1 = Down(in_channels=64, out_channels=128)

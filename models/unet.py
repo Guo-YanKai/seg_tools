@@ -66,9 +66,11 @@ class Up(nn.Module):
     def forward(self, x1, x2):
         x1 = self.up(x1)
         # 通过torch.cat连接两个tensor
-        diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
-        diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
-        x1 = F.pad(x1, pad=[diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
+        # 这里的三行代码主要是针对使用valid卷积的模式
+        # 这样,上采样后他分辨率与同一层解码器的分辨率不一致的skip cat的连接
+        # diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
+        # diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
+        # x1 = F.pad(x1, pad=[diffX // 2, diffX - diffX // 2, diffY // 2, diffY - diffY // 2])
         x = torch.cat([x2, x1], dim=1)
 
         return self.conv(x)

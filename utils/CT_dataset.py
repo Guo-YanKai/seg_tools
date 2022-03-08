@@ -56,7 +56,8 @@ class BasicDataset(Dataset):
         # mask_array = np.expand_dims(mask_array, axis=2)
         # mask_array = mask_array.transpose((2,0,1))
 
-        return {"image": image, "mask": torch.from_numpy(mask_array), "name": name.split(".")[0]}
+        return {"image": image, "mask": torch.from_numpy(mask_array),
+                    "name": name.split(".")[0]}
 
     def __len__(self):
         return len(self.image_names)

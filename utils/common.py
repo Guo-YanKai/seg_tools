@@ -44,5 +44,5 @@ def split_data_val(dataset, args, shuffle=True):
     # 生成数据采样器和加载器
     train_sample = SubsetRandomSampler(train_indices)
     val_sample = SubsetRandomSampler(val_indices)
-    print(f" train sample: {len(train_indices)},  val sample: {len(val_indices)}")
+    print(f"train sample: {len(train_indices)},  val sample: {len(val_indices)}")
     return train_sample, val_sample

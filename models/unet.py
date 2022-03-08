@@ -125,6 +125,6 @@ if __name__ == "__main__":
     net = Unet(in_channels=3, n_labels=17)
     # with SummaryWriter("runs_models/unet") as w:
     #     w.add_graph(net, x)
-    print_models(net)
-    print(stat(net, (3,512,512)))
-
+    # print_models(net)
+    # print(stat(net, (3,512,512)))
+    print(net(x).shape)

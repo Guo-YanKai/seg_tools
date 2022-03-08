@@ -122,10 +122,10 @@ class Unet(nn.Module):
 
 
 if __name__ == "__main__":
-    x = torch.randn((1, 3, 512, 512))
-    net = Unet(in_channels=3, n_labels=17)
+    # x = torch.randn((1, 3, 512, 512))
+    net = Unet(in_channels=1, n_labels=17)
     # with SummaryWriter("runs_models/unet") as w:
     #     w.add_graph(net, x)
     # print_models(net)
-    # print(stat(net, (3,512,512)))
-    print(net(x).shape)
+    print(stat(net, (1,512,512)))
+    # print(net(x).shape)

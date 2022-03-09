@@ -12,6 +12,7 @@ from torchstat import stat
 from utils.common import print_models
 from tensorboardX import SummaryWriter
 
+
 class VGGBlock(nn.Module):
     """结构:[conv,bn,relu]*2,[B, in_channels, H, W] ==> [B, out_channels, H, W]"""
 
@@ -35,9 +36,9 @@ class VGGBlock(nn.Module):
         return out
 
 
-class NestedUNet(nn.Module):
+class Nested_UNet(nn.Module):
     def __init__(self, in_channels, n_labels, deepsupervision=True):
-        super(NestedUNet, self).__init__()
+        super(Nested_UNet, self).__init__()
         self.in_channels = in_channels
         self.n_labels = n_labels
         self.deepsupervision = deepsupervision
@@ -74,7 +75,6 @@ class NestedUNet(nn.Module):
         else:
             self.final = nn.Conv2d(nb_filter[0], self.n_labels, kernel_size=1)
 
-
     def forward(self, input):
         x0_0 = self.conv0_0(input)
         x1_0 = self.conv1_0(self.pool(x0_0))  # 通道in_channels=>32,大小变为一半
@@ -108,10 +108,8 @@ class NestedUNet(nn.Module):
 
 if __name__ == "__main__":
     x = torch.randn((2, 1, 512, 512))
-    net = NestedUNet(in_channels=1, n_labels=17, deepsupervision=False)
-    with SummaryWriter("runs_models/nested-unet") as w:
-        w.add_graph(net, x)
-    print_models(net)
+    net = Nested_UNet(in_channels=1, n_labels=17, deepsupervision=False)
+    # with SummaryWriter("runs_models/nested-unet") as w:
+    #     w.add_graph(net, x)
+    # print_models(net)
     print(stat(net, (1, 512, 512)))
-
-

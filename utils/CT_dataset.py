@@ -24,7 +24,7 @@ from torchvision.transforms import Compose, Resize, ToTensor, Normalize, RandomR
 class BasicDataset(Dataset):
     """二维CT的数据"""
 
-    def __init__(self, data_path, scale=1):
+    def __init__(self, data_path, args, scale=1):
         self.images_dirs = os.path.join(data_path, "images")
         self.masks_dirs = os.path.join(data_path, "masks")
         self.scale = scale
@@ -53,11 +53,13 @@ class BasicDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         mask_array = np.array(mask)
+        if args.n_labels==2:
+            mask_array[mask_array!=0]=1
         # mask_array = np.expand_dims(mask_array, axis=2)
         # mask_array = mask_array.transpose((2,0,1))
 
         return {"image": image, "mask": torch.from_numpy(mask_array),
-                    "name": name.split(".")[0]}
+                "name": name.split(".")[0]}
 
     def __len__(self):
         return len(self.image_names)
@@ -68,14 +70,14 @@ from utils.common import split_data_val
 
 if __name__ == "__main__":
     # 测试数据
-    dataset = BasicDataset(args.data_path)
+    dataset = BasicDataset(args.data_path, args)
     train_sample, val_sample = split_data_val(dataset, args)
     train_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sample)
     val_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=val_sample)
 
     for data in (train_loader):
         print(data["image"].shape)
-        print(data["mask"].shape)
+        print(Counter(np.array(data["mask"].detach()).ravel()))
         break
 
     # print(data[214]["mask"].shape)

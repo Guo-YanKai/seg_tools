@@ -13,6 +13,7 @@ from torchstat import stat
 from utils.common import print_models
 from tensorboardX import SummaryWriter
 
+
 class DoubleConv(nn.Module):
     """结构：[convolution => [BN] => ReLU] * 2
     返回结果；原tensor大小不变，通道变为out_channels"""
@@ -106,6 +107,15 @@ class Unet(nn.Module):
 
         self.outc = Outc(in_channels=64, out_channels=self.n_labels)
 
+        # 在类中初始化，利用self.modules进行循环
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+        #     elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+        #         nn.init.constant_(m.weight, 1)
+        #         nn.init.constant_(m.bias, 0)
+
+
     def forward(self, x):
         x1 = self.inc(x)
         x2 = self.down1(x1)
@@ -122,10 +132,14 @@ class Unet(nn.Module):
 
 
 if __name__ == "__main__":
-    # x = torch.randn((1, 3, 512, 512))
+    x = torch.randn((1, 1, 512, 512))
     net = Unet(in_channels=1, n_labels=17)
     # with SummaryWriter("runs_models/unet") as w:
     #     w.add_graph(net, x)
     # print_models(net)
-    print(stat(net, (1,512,512)))
-    # print(net(x).shape)
+    # print(stat(net, (,512,512)))
+    print(net(x).shape)
+
+    # print(dict(net.named_parameters())["inc.double_conv.0.weight"].shape)
+    # for k,v in net.state_dict().items():
+    #     print(k)

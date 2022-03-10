@@ -128,9 +128,10 @@ class Unet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        return logits
+        return F.softmax(logits,dim=1)
 
-
+from collections import Counter
+import numpy as np
 if __name__ == "__main__":
     x = torch.randn((1, 1, 512, 512))
     net = Unet(in_channels=1, n_labels=17)
@@ -138,7 +139,10 @@ if __name__ == "__main__":
     #     w.add_graph(net, x)
     # print_models(net)
     # print(stat(net, (,512,512)))
-    print(net(x).shape)
+    pred = net(x)
+    print(pred.shape)
+    print(torch.min(pred),torch.max(pred))
+    print(Counter(np.array(pred.detach()).ravel()))
 
     # print(dict(net.named_parameters())["inc.double_conv.0.weight"].shape)
     # for k,v in net.state_dict().items():

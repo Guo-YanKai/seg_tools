@@ -34,7 +34,7 @@ class BasicDataset(Dataset):
         logging.info(f"Creating dataset with {len(self.images_dirs)} examples.")
 
         self.transform = Compose([
-            # Resize(0.5),
+            # Resize((128,128)),
             # RandomHorizontalFlip(0.5), # 以概率0.5随机水平翻转。
             ToTensor(),  # 归一化为：将取值范围[0,255]的Image图像或(H,W,C)的array ===>【C,H,W】取值范围[0,1.0]的float tensor
             # Normalize(mean=, std=)  # 这里是标准化，是原始数据的均值和方差
@@ -67,6 +67,7 @@ class BasicDataset(Dataset):
 
 from config import args
 from utils.common import split_data_val
+from utils.target_one_hot import one_hot_1,one_hot_2
 
 if __name__ == "__main__":
     # 测试数据
@@ -75,10 +76,19 @@ if __name__ == "__main__":
     train_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sample)
     val_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=val_sample)
 
-    for data in (train_loader):
-        print(data["image"].shape)
+    for i, data in enumerate(train_loader):
+        print(data["mask"].shape)
         print(Counter(np.array(data["mask"].detach()).ravel()))
+        label_one_hot1 = one_hot_1(data["mask"].to(dtype=torch.long), n_labels=args.n_labels)
+
+        # label_one_hot2 = one_hot_2(data["mask"].to(dtype=torch.long), n_labels=args.n_labels)
+        print(label_one_hot1.shape)
+        print(Counter(np.array(label_one_hot1.detach()[:,8,:,:]).ravel()))
+        # print(label_one_hot2.shape)
+        # print(label_one_hot1.detach()==label_one_hot2.detach())
+    #     print(Counter(np.array(data["mask"].detach()).ravel()))
         break
+
 
     # print(data[214]["mask"].shape)
     # img = np.array(data[214]["mask"].detach())

@@ -7,7 +7,7 @@
 # @software: PyCharm
 import torch
 import torch.nn as nn
-
+from utils.target_one_hot import one_hot_1
 BCELoss = nn.BCELoss()
 BCEWithLogitsLoss = nn.BCEWithLogitsLoss()
 
@@ -33,6 +33,8 @@ def compute_per_channel_dice(input, target, epsilon=1e-6, weight=None):
     epsilon:(float) 防止被除数为0
     weight:(torch.tensor):[C,1] 每个类别的权重
         """
+    target = one_hot_1(target) # 进行编码
+
     assert input.size() == target.size(), "input and target must have the same shape"
     input = flatten(input)
     target = flatten(target)

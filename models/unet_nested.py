@@ -17,7 +17,7 @@ class VGGBlock(nn.Module):
     """结构:[conv,bn,relu]*2,[B, in_channels, H, W] ==> [B, out_channels, H, W]"""
 
     def __init__(self, in_channels, middle_channels,
-                 out_channels, act_func=nn.ReLU(inplace=True)):
+                 out_channels, act_func=nn.PReLU()):
         super(VGGBlock, self).__init__()
         self.act_func = act_func
         self.conv1 = nn.Conv2d(in_channels, middle_channels, 3, padding=1)
@@ -92,6 +92,7 @@ class Nested_UNet(nn.Module):
         x4_0 = self.conv4_0(self.pool(x3_0))
         x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], dim=1))
         x2_2 = self.conv2_2(torch.cat([x2_0, x2_1, self.up(x3_1)], dim=1))
+
         x1_3 = self.conv1_3(torch.cat([x1_0, x1_1, x1_2, self.up(x2_2)], dim=1))
         x0_4 = self.conv0_4(torch.cat([x0_0, x0_1, x0_2, x0_3, self.up(x1_3)], dim=1))
 
@@ -107,9 +108,10 @@ class Nested_UNet(nn.Module):
 
 
 if __name__ == "__main__":
-    x = torch.randn((2, 1, 512, 512))
-    net = Nested_UNet(in_channels=1, n_labels=17, deepsupervision=False)
+    x = torch.randn((3, 1, 512, 512))
+    net = Nested_UNet(in_channels=1, n_labels=17, deepsupervision=True)
     # with SummaryWriter("runs_models/nested-unet") as w:
     #     w.add_graph(net, x)
     # print_models(net)
-    print(stat(net, (1, 512, 512)))
+    # print(stat(net, (1, 512, 512)))
+    print(type(net(x)))

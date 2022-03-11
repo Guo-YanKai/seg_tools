@@ -46,3 +46,7 @@ def split_data_val(dataset, args, shuffle=True):
     val_sample = SubsetRandomSampler(val_indices)
     print(f"train sample: {len(train_indices)},  val sample: {len(val_indices)}")
     return train_sample, val_sample
+
+def print_weight_grad(optimizer):
+    """打印模型参数"""
+    print([x.grad for x in optimizer.param_groups["0"]["params"]])

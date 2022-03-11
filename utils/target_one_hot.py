@@ -12,7 +12,7 @@ import torch
 
 def one_hot_1(target, n_labels=17):
     n,h,w = target.size()
-    one_hot = torch.zeros(n, n_labels, h, w).scatter_(1, target.view(n, 1, h, w), 1)
+    one_hot = torch.zeros(n, n_labels, h, w).scatter_(1, target.view(n, 1, h, w), 1).to(target.device)
     return one_hot
 
 def one_hot_2(target, n_labels=17):

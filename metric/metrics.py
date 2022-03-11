@@ -9,6 +9,7 @@
 import torch
 import numpy as np
 from utils.target_one_hot import one_hot_1
+import torch.nn.functional as F
 
 class LossAverage(object):
     """计算并存储当前损失值和平均值"""
@@ -51,6 +52,7 @@ class DiceAverage(object):
     @staticmethod
     def get_dices(logits, target):
         # 计算每个类别的dice分数
+        logits = F.softmax(logits, dim=1)
         target = one_hot_1(target)
         dices=[]
         for class_index in range(target.size()[1]):

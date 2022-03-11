@@ -128,7 +128,7 @@ class Unet(nn.Module):
         x = self.up3(x, x2)
         x = self.up4(x, x1)
         logits = self.outc(x)
-        return F.softmax(logits,dim=1)
+        return logits
 
 from collections import Counter
 import numpy as np
@@ -138,11 +138,11 @@ if __name__ == "__main__":
     # with SummaryWriter("runs_models/unet") as w:
     #     w.add_graph(net, x)
     # print_models(net)
-    # print(stat(net, (,512,512)))
-    pred = net(x)
-    print(pred.shape)
-    print(torch.min(pred),torch.max(pred))
-    print(Counter(np.array(pred.detach()).ravel()))
+    print(stat(net, (1,512,512)))
+    # pred = net(x)
+    # print(pred.shape)
+    # print(torch.min(pred),torch.max(pred))
+    # print(Counter(np.array(pred.detach()).ravel()))
 
     # print(dict(net.named_parameters())["inc.double_conv.0.weight"].shape)
     # for k,v in net.state_dict().items():

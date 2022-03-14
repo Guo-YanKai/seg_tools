@@ -109,6 +109,9 @@ if __name__ == "__main__":
                                                    gamma=0.8)
     elif args.scheduler == "ExponentialLR":
         scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+    elif args.scheduler =="CosineAnnealingLR":
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                         T_max=args.epochs, eta_min=0)
     else:
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.9)
 
@@ -125,17 +128,17 @@ if __name__ == "__main__":
 
     log = Train_Logger(log_save_path, "train_log", args)
 
-    # best = [0, float("inf")]  # 初始化最优模型的epoch和dice分数
-    # trigger = 0  # 早停计数器
-    #
-    # for epoch in range(1, args.epochs + 1):
-    #     train_log = train(net, train_loader, optimizer, criterion, device, scheduler, args)
-    #     val_log = val(net, val_loader, criterion, args)
-    #
-    #     # 跟新学习率
-    #     scheduler.step()
-    #     # 获得当前的学习率
-    #     print(scheduler.get_last_lr())
-    #     log.update(epoch, train_log, val_log)
-    #
-    # torch.cuda.empty_cache()
+    best = [0, float("inf")]  # 初始化最优模型的epoch和dice分数
+    trigger = 0  # 早停计数器
+
+    for epoch in range(1, args.epochs + 1):
+        train_log = train(net, train_loader, optimizer, criterion, device, scheduler, args)
+        val_log = val(net, val_loader, criterion, args)
+
+        # 跟新学习率
+        scheduler.step()
+        # 获得当前的学习率
+        print(scheduler.get_last_lr())
+        log.update(epoch, train_log, val_log)
+
+    torch.cuda.empty_cache()

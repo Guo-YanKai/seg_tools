@@ -27,7 +27,9 @@ class BasicDataset(Dataset):
     def __init__(self, data_path, args, scale=1):
         self.images_dirs = os.path.join(data_path, "images")
         self.masks_dirs = os.path.join(data_path, "masks")
+        self.args = args
         self.scale = scale
+
         assert 0 < scale <= 1, "Scale must between 0 and 1"
 
         self.image_names = os.listdir(self.images_dirs)
@@ -53,7 +55,7 @@ class BasicDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         mask_array = np.array(mask)
-        if args.n_labels==2:
+        if self.args.n_labels==2:
             mask_array[mask_array!=0]=1
         # mask_array = np.expand_dims(mask_array, axis=2)
         # mask_array = mask_array.transpose((2,0,1))
@@ -78,59 +80,15 @@ if __name__ == "__main__":
 
     for i, data in enumerate(train_loader):
         print(data["mask"].shape)
-        print(Counter(np.array(data["mask"].detach()).ravel()))
-        label_one_hot1 = one_hot_1(data["mask"].to(dtype=torch.long), n_labels=args.n_labels)
+        print(Counter(np.array(data["image"].detach()).ravel()))
+        # label_one_hot1 = one_hot_1(data["mask"].to(dtype=torch.long), n_labels=args.n_labels)
 
         # label_one_hot2 = one_hot_2(data["mask"].to(dtype=torch.long), n_labels=args.n_labels)
-        print(label_one_hot1.shape)
-        print(Counter(np.array(label_one_hot1.detach()[:,8,:,:]).ravel()))
+        # print(label_one_hot1.shape)
+        # print(Counter(np.array(label_one_hot1.detach()[:,8,:,:]).ravel()))
         # print(label_one_hot2.shape)
         # print(label_one_hot1.detach()==label_one_hot2.detach())
     #     print(Counter(np.array(data["mask"].detach()).ravel()))
         break
 
 
-    # print(data[214]["mask"].shape)
-    # img = np.array(data[214]["mask"].detach())
-    # print(Counter(img.ravel()))
-
-    # transform = Compose([
-    #     # Resize(),
-    #     # RandomHorizontalFlip(0.5),  # 以概率0.5随机水平翻转。
-    #     ToTensor(),  # 归一化为：将取值范围[0,255]的Image图像或(H,W,C)的array ===>【C,H,W】取值范围[0,1.0]的float tensor
-    #     # Normalize(mean=0.5, std=0.5)  # 这里是标准化，是原始数据的均值和方差
-    # ])
-    # image  = Image.open(r"D:\code\data\cbct\label\1\images\001_215.png")
-    # print(image)
-    # w, h = image.size
-    # pil_image = image.resize((512,512))
-    # image_array = np.array(pil_image)
-    # print(image_array.shape)
-    # image_array = np.expand_dims(image_array, axis=2)
-    # print(image_array.shape)
-    # img_trans = image_array.transpose((2, 0, 1))
-    # print(img_trans.shape)
-    #
-    # print(img_trans.dtype)
-    #
-    # img_trans.astype(float)
-    # print(img_trans.dtype)
-    #
-    # img_tensor = torch.from_numpy(img_trans)
-    # print(img_tensor)
-
-    # image_array = np.array(image)
-    # print(image_array)
-    # print("mean:",np.mean(image_array), "std:",np.std(image_array))
-    # print(image_array.shape)
-    #
-    #
-    # image_normal = norm_img(image_array)
-    # print("norm:image, mean:", np.mean(image_normal), "norm_image std:", np.std(image_normal))
-    # print(Counter(image_normal.ravel()))
-    #
-    #
-    # image_trans = transform(image)
-    # print(type(image_trans))
-    # print(image_trans.shape)
-    # print(Counter(np.array(image_trans.detach()).ravel()))

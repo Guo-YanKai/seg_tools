@@ -36,7 +36,7 @@ class Train_Logger():
         item.update(val_log)
         item=dict_round(item, 4)
         print("\033[0:32m Train: \033[0m", train_log)
-        print("\033[0:32m Train: \033[0m", val_log)
+        print("\033[0:32m Val: \033[0m", val_log)
         self.updata_csv(item)
         self.updata_tensorboard(item)
 

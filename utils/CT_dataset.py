@@ -27,6 +27,7 @@ class BasicDataset(Dataset):
     def __init__(self, data_path, args, scale=1):
         self.images_dirs = os.path.join(data_path, "images")
         self.masks_dirs = os.path.join(data_path, "masks")
+
         self.args = args
         self.scale = scale
 
@@ -46,6 +47,7 @@ class BasicDataset(Dataset):
         name = self.image_names[item]
         image_path = os.path.join(self.images_dirs, name)
         mask_path = os.path.join(self.masks_dirs, name)
+
         image = Image.open(image_path)
         mask = Image.open(mask_path)
 
@@ -66,6 +68,32 @@ class BasicDataset(Dataset):
     def __len__(self):
         return len(self.image_names)
 
+class TestDataset(Dataset):
+    """测试牙齿数据处理"""
+    def __init__(self,test_dir, args, scale=1):
+        self.test_dir = test_dir
+        self.args = args
+        self.scale = scale
+        assert 0 < scale <= 1, "Scale must between 0 and 1"
+        self.image_names = os.listdir(self.test_dir)
+        print(f"Creating dataset with {len(self.image_names)} examples.")
+        self.transform = Compose([
+            # Resize(self.scale),
+            # RandomHorizontalFlip(0.5), # 以概率0.5随机水平翻转。
+            ToTensor(),  # 归一化为：将取值范围[0,255]的Image图像或(H,W,C)的array ===>【C,H,W】取值范围[0,1.0]的float tensor
+            # Normalize(mean=, std=)  # 这里是标准化，是原始数据的均值和方差
+        ])
+    def __len__(self):
+        return len(self.image_names)
+
+    def __getitem__(self, item):
+        name = self.image_names[item]
+        image_path = os.path.join(self.test_dir, name)
+        image = Image.open(image_path)
+        if self.transform:
+            image = self.transform(image)
+        return {"image": image,"name": name.split(".")[0]}
+
 
 from config import args
 from utils.common import split_data_val
@@ -73,7 +101,7 @@ from utils.target_one_hot import one_hot_1,one_hot_2
 
 if __name__ == "__main__":
     # 测试数据
-    dataset = BasicDataset(args.data_path, args)
+    dataset = BasicDataset(args.test_data, args)
     train_sample, val_sample = split_data_val(dataset, args)
     train_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=train_sample)
     val_loader = DataLoader(dataset, batch_size=args.batch_size, sampler=val_sample)

@@ -82,7 +82,7 @@ class DiceLoss(_AbstractAiceLoss):
     """二分类的diceLoss是1-DiceCoefficient
     多分类是计算每个通道的DiceLoss,然后对这些值求平均"""
 
-    def __init__(self, weight=None, normalization="sigmoid"):
+    def __init__(self, weight=None, normalization="softmax"):
         super().__init__(weight, normalization)
 
     def dice(self, output, target, weight):
@@ -90,7 +90,7 @@ class DiceLoss(_AbstractAiceLoss):
 
 
 class GeneralizeDiceLoss(_AbstractAiceLoss):
-    def __init__(self, normalization="sigmoid", epsilon=1e-6):
+    def __init__(self, normalization="softmax", epsilon=1e-6):
         super(GeneralizeDiceLoss, self).__init__(weight=None, normalization=normalization)
         self.epsilon = epsilon
 

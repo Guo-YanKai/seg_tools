@@ -77,5 +77,5 @@ def init_model(net):
         nn.init.kaiming_normal_(net.weight.data,0.25)
         nn.init.constant_(net.bias.data,0.1)
     elif isinstance(net,nn.BatchNorm2d):
-        nn.init.normal_(net.weight.data, 1.0,0.02)
+        nn.init.normal_(net.weight.data, 1.0, 0.02)
         nn.init.constant_(net.bias.data, 0.1)

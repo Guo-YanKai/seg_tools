@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from torchstat import stat
 from utils.common import print_models
 from tensorboardX import SummaryWriter
-
+from utils.weights_init import init_weights
 
 class DoubleConv(nn.Module):
     """结构：[convolution => [BN] => ReLU] * 2
@@ -107,13 +107,12 @@ class Unet(nn.Module):
 
         self.outc = Outc(in_channels=64, out_channels=self.n_labels)
 
-        # 在类中初始化，利用self.modules进行循环
-        # for m in self.modules():
-        #     if isinstance(m, nn.Conv2d):
-        #         nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-        #     elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
-        #         nn.init.constant_(m.weight, 1)
-        #         nn.init.constant_(m.bias, 0)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init_weights(m, init_type="kaiming")
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                init_weights(m,init_type="kaiming")
 
 
     def forward(self, x):
@@ -138,9 +137,9 @@ if __name__ == "__main__":
     # with SummaryWriter("runs_models/unet") as w:
     #     w.add_graph(net, x)
     # print_models(net)
-    print(stat(net, (1,512,512)))
-    # pred = net(x)
-    # print(pred.shape)
+    # print(stat(net, (1,512,512)))
+    pred = net(x)
+    print(pred.shape)
     # print(torch.min(pred),torch.max(pred))
     # print(Counter(np.array(pred.detach()).ravel()))
 

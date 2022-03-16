@@ -11,7 +11,7 @@ import torch.nn as nn
 from torchstat import stat
 from utils.common import print_models
 from tensorboardX import SummaryWriter
-
+from utils.weights_init import init_weights
 
 class VGGBlock(nn.Module):
     """结构:[conv,bn,relu]*2,[B, in_channels, H, W] ==> [B, out_channels, H, W]"""
@@ -75,6 +75,14 @@ class Nested_UNet(nn.Module):
         else:
             self.final = nn.Conv2d(nb_filter[0], self.n_labels, kernel_size=1)
 
+        #-----initialise weights--------
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init_weights(m, init_type="kaiming")
+            elif isinstance(m, nn.BatchNorm2d):
+                init_weights(m, init_type="kaiming")
+
+
     def forward(self, input):
         x0_0 = self.conv0_0(input)
         x1_0 = self.conv1_0(self.pool(x0_0))  # 通道in_channels=>32,大小变为一半
@@ -114,4 +122,4 @@ if __name__ == "__main__":
     #     w.add_graph(net, x)
     # print_models(net)
     # print(stat(net, (1, 512, 512)))
-    print(type(net(x)))
+    print(net(x)[0].shape)

@@ -30,10 +30,10 @@ parser.add_argument("--net_name", type=str, default="Nested_UNet", help="选择�
 parser.add_argument("--dsv", type=bool, default=True, help="deepsupervision for nested_unet /unet3+")
 parser.add_argument("--load",default=None, help="导入的模型文件")
 
-parser.add_argument("--optimizer", type=str, default="SGD", help="chose one optimizer:[SGD,Adam,RMSprop]")
+parser.add_argument("--optimizer", type=str, default="SGD_weight", help="chose one optimizer:[SGD,Adam,RMSprop]")
 parser.add_argument("--scheduler", type=str, default="StepLR",
                     help="学习率衰减方式:[StepLR, MultiStepLR, ExponentialLR, CosineAnnealingLR]")
-parser.add_argument("--loss", type=str, default="CRE", help="损失函数:[CRE,DiceLoss,GeneralizeDiceLoss,FocalLoss]")
+parser.add_argument("--loss", type=str, default="DiceLoss", help="损失函数:[CRE,DiceLoss,GeneralizeDiceLoss,FocalLoss]")
 parser.add_argument("--epochs", type=int, default=10, help="number of epochs to train")
 parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
 parser.add_argument("--alpha", type=float, default=0.5, help="深度监督系数")

@@ -22,7 +22,8 @@ from models.unet import Unet
 from models.unet_nested import Nested_UNet
 from tqdm import tqdm
 import torch.optim as optim
-from metric.loss import DiceLoss, GeneralizeDiceLoss
+from metric import loss
+# from metric.loss import DiceLoss, BCEDiceLoss, GeneralizeDiceLoss
 from metric.metrics import LossAverage, DiceAverage
 from collections import OrderedDict
 import numpy as np
@@ -123,7 +124,8 @@ if __name__ == "__main__":
         net = Unet3D(in_channels=1, n_labels=args.n_labels).to(device)
     else:
         net = Nested_UNet(in_channels=1, n_labels=args.n_labels, deepsupervision=args.dsv).to(device)
-    net.apply(init_model)
+
+    # net.apply(init_model) 模型实例化时已经初始化
 
     # 是否从已有的模型参数开始训练
     if args.load:
@@ -161,9 +163,12 @@ if __name__ == "__main__":
     if args.loss == "CRE":
         criterion = nn.CrossEntropyLoss(weight=weights)
     elif args.loss == "DiceLoss":
-        criterion = DiceLoss(normalization="softmax")
+        criterion = loss.DiceLoss(args, weight=weights)
+    elif args.loss =="BCEDiceLoss":
+        criterion = loss.BCEDiceLoss(args, weight=weights)
     else:
-        criterion = GeneralizeDiceLoss(normalization="softmax")
+        criterion = loss.GeneralizeDiceLoss()
+
     log_save_path = os.path.join(args.save_path, args.net_name, args.loss,args.optimizer)
     os.makedirs(log_save_path,exist_ok=True)
 

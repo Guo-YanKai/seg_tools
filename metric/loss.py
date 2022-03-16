@@ -8,6 +8,7 @@
 import torch
 import torch.nn as nn
 from utils.target_one_hot import one_hot_1
+
 BCELoss = nn.BCELoss()
 BCEWithLogitsLoss = nn.BCEWithLogitsLoss()
 
@@ -33,7 +34,7 @@ def compute_per_channel_dice(output, target, epsilon=1e-6, weight=None):
     epsilon:(float) 防止被除数为0
     weight:(torch.tensor):[C,1] 每个类别的权重
         """
-    target = one_hot_1(target) # 进行编码
+    target = one_hot_1(target)  # 进行编码
 
     assert output.size() == target.size(), "output and target must have the same shape"
     output = flatten(output)
@@ -78,15 +79,15 @@ class _AbstractAiceLoss(nn.Module):
         return 1. - torch.mean(per_channel_dice)
 
 
-class DiceLoss(_AbstractAiceLoss):
-    """二分类的diceLoss是1-DiceCoefficient
-    多分类是计算每个通道的DiceLoss,然后对这些值求平均"""
-
-    def __init__(self, weight=None, normalization="softmax"):
-        super().__init__(weight, normalization)
-
-    def dice(self, output, target, weight):
-        return compute_per_channel_dice(output, target, weight=self.weight)
+# class DiceLoss(_AbstractAiceLoss):
+#     """二分类的diceLoss是1-DiceCoefficient
+#     多分类是计算每个通道的DiceLoss,然后对这些值求平均"""
+#
+#     def __init__(self, weight=None, normalization="softmax"):
+#         super().__init__(weight, normalization)
+#
+#     def dice(self, output, target, weight):
+#         return compute_per_channel_dice(output, target, weight=self.weight)
 
 
 class GeneralizeDiceLoss(_AbstractAiceLoss):
@@ -95,6 +96,7 @@ class GeneralizeDiceLoss(_AbstractAiceLoss):
         self.epsilon = epsilon
 
     def dice(self, output, target, weight):
+        target = one_hot_1(target)
         assert output.size() == target.size(), "output and target must have the same shape"
         output = flatten(output)
         target = flatten(target)
@@ -116,13 +118,65 @@ class GeneralizeDiceLoss(_AbstractAiceLoss):
         return 2 * (intersect.sum() / demoninator.sum())
 
 
-class BCEDiceLoss():
+
+
+# ****************DiceLoss****************
+class DiceLoss(nn.Module):
+    def __init__(self, args, weight=None):
+        super(DiceLoss, self).__init__()
+        self.args = args
+        self.weight = weight
+
+    def _dice_loss(self, pred, target):
+        smooth = 1e-5
+        intersect = torch.sum(pred * target)
+        p_sum = torch.sum(pred * pred)
+        y_sum = torch.sum(target * target)
+        dice = (2 * intersect + smooth) / (p_sum + y_sum)
+        loss = 1 - dice
+        return loss.mean()
+
+    def forward(self, preds, target, softmax=True):
+        if softmax:
+            preds = torch.softmax(preds, dim=1)
+        target = one_hot_1(target)
+        assert preds.size() == target.size(), "output and target must have the same shape"
+        class_wise_dice = []
+        loss = 0.0
+        for i in range(self.args.n_labels):
+            dice = self._dice_loss(preds[:, i], target[:, i])
+            class_wise_dice.append(dice.item())
+            loss += dice * self.weight[i]
+        return loss / self.args.n_labels
+
+# ***************BCEDiceLoss**************
+class BCEDiceLoss(nn.Module):
     """
     BCE和DiceLoss的线性组合,alpha * BCE + beta * Dice, alpha, beta
     """
+    def __init__(self, args, alpha=0.5, beta=0.5, weight=None):
+        super(BCEDiceLoss, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.args = args
 
-    def __init__(self, alpha, beta):
-        c = 0
+        self.bce = nn.CrossEntropyLoss(weight=weight)
+        self.dice = DiceLoss(self.args, weight=weight)
+
 
     def forward(self, pred, target):
-        return pred
+        return self.alpha * self.bce(pred, target) + self.dice(pred, target)
+
+
+# -----------------MS-SSIM(多尺度结构相似损失函数)---------------------
+class MSSSIM(nn.Module):
+    def __init__(self):
+        super(MSSSIM, self).__init__()
+
+
+    def forward(self,pred, target):
+
+        return 0
+
+
+

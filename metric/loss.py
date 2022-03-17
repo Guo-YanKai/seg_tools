@@ -8,6 +8,7 @@
 import torch
 import torch.nn as nn
 from utils.target_one_hot import one_hot_1
+import torch.nn.functional as F
 
 BCELoss = nn.BCELoss()
 BCEWithLogitsLoss = nn.BCEWithLogitsLoss()
@@ -90,7 +91,7 @@ class _AbstractAiceLoss(nn.Module):
 #         return compute_per_channel_dice(output, target, weight=self.weight)
 
 
-#-----------------GeneralizeDiceLoss（待完善）------------
+# -----------------GeneralizeDiceLoss（待完善）------------
 class GeneralizeDiceLoss(_AbstractAiceLoss):
     def __init__(self, normalization="softmax", epsilon=1e-6):
         super(GeneralizeDiceLoss, self).__init__(weight=None, normalization=normalization)
@@ -136,14 +137,18 @@ class DiceLoss(nn.Module):
         return loss
 
     def forward(self, preds, target, softmax=True):
+
+        N, C, H, W = preds.size()
+        preds = preds.reshape(N,C,H*W)
         if softmax:
-            preds = torch.softmax(preds, dim=1)
+            preds = torch.softmax(preds, dim=2)
+        preds = preds.reshape(N,C,H,W)
+
         target = one_hot_1(target)
         assert preds.size() == target.size(), "output and target must have the same shape"
         class_wise_dice = []
         loss = 0.0
         for i in range(self.args.n_labels):
-
             dice = self._dice_loss(preds[:, i], target[:, i])
             class_wise_dice.append(dice.item())
             loss += dice * self.weight[i]
@@ -155,6 +160,7 @@ class BCEDiceLoss(nn.Module):
     """
     BCE和DiceLoss的线性组合,alpha * BCE + beta * Dice, alpha, beta
     """
+
     def __init__(self, args, alpha=1, beta=0.5, weight=None):
         super(BCEDiceLoss, self).__init__()
         self.alpha = alpha
@@ -172,12 +178,22 @@ class BCEDiceLoss(nn.Module):
 
 # ---------------FocalLoss------------------
 class FocalLoss(nn.Module):
-    def __init__(self, weight=None):
+    def __init__(self, alpha=1, gamma=2, weight=None, size_average=False):
         super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
         self.weight = weight
+        self.size_average = size_average
 
-    def forward(self, pred, target):
-        return 0
+    def forward(self, inputs, targets):
+        print(inputs.shape, targets.shape)
+        ce_loss = F.cross_entropy(inputs, targets, weight=self.weight)
+        pt = torch.exp(-ce_loss)
+        focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
+        if self.size_average:
+            return focal_loss.mean()
+        else:
+            return focal_loss.sum()
 
 
 # -----------------MS-SSIM(多尺度结构相似损失函数--待完善)---------------------
@@ -188,3 +204,28 @@ class MSSSIM(nn.Module):
     def forward(self, pred, target):
         return 0
 
+
+if __name__ == "__main__":
+    device = torch.device("cuda:0")
+    outputs = torch.tensor([[[2, 1., 2.3],
+                            [2.5, 1, 1.2],
+                            [0.3, 2., 3.4]],
+                            [[2, 1., 2.3],
+                             [2.5, 1, 1.2],
+                             [0.3, 2., 3.4]]
+                            ]).reshape(2,1,3,3).to(device)
+    targets = torch.tensor([[0, 1, 0],[0, 1, 0]]).to(device)
+    print("outputs:",outputs.shape, outputs)
+
+    # N,C,H,W => N,C,H*W
+    outputs2 = outputs.reshape(2, 1,-1)
+    print(outputs2.shape)
+
+    pred = F.softmax(outputs2, dim=2)
+    pred  = pred.reshape(2,1,3,3)
+    print("pred:", pred.shape, pred)
+
+    # loss1 = FocalLoss()
+    # print(loss1(outputs, targets))
+    # loss2 = nn.CrossEntropyLoss()
+    # print(loss2(outputs, targets))

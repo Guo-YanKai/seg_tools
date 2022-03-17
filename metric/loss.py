@@ -90,6 +90,7 @@ class _AbstractAiceLoss(nn.Module):
 #         return compute_per_channel_dice(output, target, weight=self.weight)
 
 
+#-----------------GeneralizeDiceLoss（待完善）------------
 class GeneralizeDiceLoss(_AbstractAiceLoss):
     def __init__(self, normalization="softmax", epsilon=1e-6):
         super(GeneralizeDiceLoss, self).__init__(weight=None, normalization=normalization)
@@ -118,8 +119,6 @@ class GeneralizeDiceLoss(_AbstractAiceLoss):
         return 2 * (intersect.sum() / demoninator.sum())
 
 
-
-
 # ****************DiceLoss****************
 class DiceLoss(nn.Module):
     def __init__(self, args, weight=None):
@@ -134,7 +133,7 @@ class DiceLoss(nn.Module):
         y_sum = torch.sum(target * target)
         dice = (2 * intersect + smooth) / (p_sum + y_sum)
         loss = 1 - dice
-        return loss.mean()
+        return loss
 
     def forward(self, preds, target, softmax=True):
         if softmax:
@@ -144,39 +143,48 @@ class DiceLoss(nn.Module):
         class_wise_dice = []
         loss = 0.0
         for i in range(self.args.n_labels):
+
             dice = self._dice_loss(preds[:, i], target[:, i])
             class_wise_dice.append(dice.item())
             loss += dice * self.weight[i]
         return loss / self.args.n_labels
+
 
 # ***************BCEDiceLoss**************
 class BCEDiceLoss(nn.Module):
     """
     BCE和DiceLoss的线性组合,alpha * BCE + beta * Dice, alpha, beta
     """
-    def __init__(self, args, alpha=0.5, beta=0.5, weight=None):
+    def __init__(self, args, alpha=1, beta=0.5, weight=None):
         super(BCEDiceLoss, self).__init__()
         self.alpha = alpha
         self.beta = beta
         self.args = args
 
-        self.bce = nn.CrossEntropyLoss(weight=weight)
+        self.cre = nn.CrossEntropyLoss(weight=weight)
         self.dice = DiceLoss(self.args, weight=weight)
 
+    def forward(self, pred, target):
+        loss1 = self.cre(pred, target)
+        loss2 = self.dice(pred, target)
+        return self.alpha * loss1 + self.beta * loss2
+
+
+# ---------------FocalLoss------------------
+class FocalLoss(nn.Module):
+    def __init__(self, weight=None):
+        super(FocalLoss, self).__init__()
+        self.weight = weight
 
     def forward(self, pred, target):
-        return self.alpha * self.bce(pred, target) + self.dice(pred, target)
+        return 0
 
 
-# -----------------MS-SSIM(多尺度结构相似损失函数)---------------------
+# -----------------MS-SSIM(多尺度结构相似损失函数--待完善)---------------------
 class MSSSIM(nn.Module):
     def __init__(self):
         super(MSSSIM, self).__init__()
 
-
-    def forward(self,pred, target):
-
+    def forward(self, pred, target):
         return 0
-
-
 

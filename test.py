@@ -13,7 +13,7 @@ from models.unet_nested import Nested_UNet
 import os
 from config import args
 from tqdm import tqdm
-from utils.CT_dataset import TestDataset
+from utils.Test_CT_Data import TestDataset
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from torchvision import transforms
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     os.makedirs(args.test_output, exist_ok=True)
     device = torch.device(f"cuda:{args.device}")
     print("device:", device)
-    dataset = TestDataset(args.test_data, args)
+    dataset = TestDataset(args)
     test_loader = DataLoader(dataset, batch_size=1,
                              num_workers=args.n_threads, pin_memory=False)
     if args.net_name == "Unet":
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     model_pth = os.path.join(args.save_path, args.net_name, args.loss, args.optimizer)
     print("model_pth:", model_pth)
-    ckpt = torch.load("{}/best_model.pth".format(model_pth), map_location=device)
+    ckpt = torch.load("{}\\best_model.pth".format(model_pth), map_location=device)
     net.load_state_dict(ckpt["net"])
     print("Model loaded！")
 
@@ -90,3 +90,5 @@ if __name__ == "__main__":
                 img_name_idx = img_name_to_ext + "_" + str(idx) + ".png"
                 image_idx = Image.fromarray((masks[idx] * 255).astype(np.uint8))
                 image_idx.save(os.path.join(output_img_dir, img_name_idx))
+
+    torch.cuda.empty_cache()

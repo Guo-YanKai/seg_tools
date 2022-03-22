@@ -137,12 +137,16 @@ class DiceLoss(nn.Module):
         return loss
 
     def forward(self, preds, target, softmax=True):
-
         N, C, H, W = preds.size()
-        preds = preds.reshape(N,C,H*W)
+        preds = preds.reshape(N, C, H * W)
         if softmax:
-            preds = torch.softmax(preds, dim=2)
-        preds = preds.reshape(N,C,H,W)
+            preds = torch.softmax(preds, dim=1)
+        preds = preds.reshape(N, C, H, W)
+
+        # total = 0
+        # for i in range(C):
+        #     total += preds[0,i,0,0]
+        # print(total)
 
         target = one_hot_1(target)
         assert preds.size() == target.size(), "output and target must have the same shape"
@@ -151,7 +155,11 @@ class DiceLoss(nn.Module):
         for i in range(self.args.n_labels):
             dice = self._dice_loss(preds[:, i], target[:, i])
             class_wise_dice.append(dice.item())
-            loss += dice * self.weight[i]
+
+            if self.weight is not None:
+                loss += dice * self.weight[i]
+            else:
+                loss += dice
         return loss / self.args.n_labels
 
 
@@ -178,7 +186,7 @@ class BCEDiceLoss(nn.Module):
 
 # ---------------FocalLoss------------------
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, weight=None, size_average=False):
+    def __init__(self, alpha=0.8, gamma=2, weight=None, size_average=False):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -186,7 +194,6 @@ class FocalLoss(nn.Module):
         self.size_average = size_average
 
     def forward(self, inputs, targets):
-        print(inputs.shape, targets.shape)
         ce_loss = F.cross_entropy(inputs, targets, weight=self.weight)
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
@@ -208,21 +215,21 @@ class MSSSIM(nn.Module):
 if __name__ == "__main__":
     device = torch.device("cuda:0")
     outputs = torch.tensor([[[2, 1., 2.3],
-                            [2.5, 1, 1.2],
-                            [0.3, 2., 3.4]],
+                             [2.5, 1, 1.2],
+                             [0.3, 2., 3.4]],
                             [[2, 1., 2.3],
                              [2.5, 1, 1.2],
                              [0.3, 2., 3.4]]
-                            ]).reshape(2,1,3,3).to(device)
-    targets = torch.tensor([[0, 1, 0],[0, 1, 0]]).to(device)
-    print("outputs:",outputs.shape, outputs)
+                            ]).reshape(2, 1, 3, 3).to(device)
+    targets = torch.tensor([[0, 1, 0], [0, 1, 0]]).to(device)
+    print("outputs:", outputs.shape, outputs)
 
     # N,C,H,W => N,C,H*W
-    outputs2 = outputs.reshape(2, 1,-1)
+    outputs2 = outputs.reshape(2, 1, -1)
     print(outputs2.shape)
 
     pred = F.softmax(outputs2, dim=2)
-    pred  = pred.reshape(2,1,3,3)
+    pred = pred.reshape(2, 1, 3, 3)
     print("pred:", pred.shape, pred)
 
     # loss1 = FocalLoss()

@@ -118,7 +118,6 @@ if __name__ == "__main__":
     dataset = TestDataset(args)
 
     dcm3d, slices_dcm = dataset.get_attribute()
-
     test_loader = DataLoader(dataset, batch_size=1,
                              num_workers=args.n_threads, pin_memory=False)
     if args.net_name == "Unet":
@@ -135,18 +134,16 @@ if __name__ == "__main__":
     net.load_state_dict(ckpt["net"])
     print("Model loaded！")
 
-    output_dcm = [[] for i in range(args.n_labels)]
-    names = []
 
+    out_dcm_path = os.path.join(args.test_output, "out_dcm")
     for i, batch in tqdm(enumerate(test_loader), total=len(test_loader)):
         image = batch["image"].to(device, dtype=torch.float32)
         dcm_data = np.array(batch["dcm_data"].squeeze(0))
-        names.append(batch["name"][0])
+        name = batch["name"][0]
         masks = test(net, image)
+        img_name_to_ext = name.split(".")[0]
 
-        img_name_to_ext = batch["name"][0].split(".")[0]
-
-        # 保存预测输出的png(已启用，不保存pred的图片了，直接处理)
+        # 保存预测输出的png(已弃用，不保存pred的图片了，直接处理)
         # output_img_dir = os.path.join(args.test_output, img_name_to_ext)
         # os.makedirs(output_img_dir, exist_ok=True)
 
@@ -157,7 +154,6 @@ if __name__ == "__main__":
             masks[masks == 1] = 255
             masks[masks == 0] = 1
             masks[masks == 255] = 0
-            output_dcm.append((masks * dcm_data).reshape(1, 512, 512).astype("int16"))
         else:
             for idx in range(0, len(masks)):
                 # img_name_idx = img_name_to_ext + "_" + str(idx) + ".png"
@@ -171,9 +167,24 @@ if __name__ == "__main__":
                     mask[mask == 1] = 255
                     mask[mask == 0] = 1
                     mask[mask == 255] = 0
-                    output_dcm[idx].append((mask * dcm_data).reshape(1, 512, 512).astype("int16"))
+
+                    new_dcm_data = (mask * dcm_data).astype("int16")
+                    out_sig_dcm_path = os.path.join(out_dcm_path, f"{idx}")
+                    os.makedirs(out_sig_dcm_path, exist_ok=True)
+
+                    slice_ori_dcm =pydicom.read_file(os.path.join(args.test_data, name))
+                    slice_ori_dcm.PixelData = new_dcm_data.tobytes()
+                    slice_ori_dcm.save_as(os.path.join(out_sig_dcm_path, name))
+
                 else:
-                    output_dcm[idx].append((mask * dcm_data).reshape(1, 512, 512).astype("int16"))
+                    new_dcm_data = (mask * dcm_data).astype("int16")
+                    out_sig_dcm_path = os.path.join(out_dcm_path, f"{idx}")
+                    os.makedirs(out_sig_dcm_path, exist_ok=True)
+
+                    slice_ori_dcm = pydicom.read_file(os.path.join(args.test_data, name))
+                    slice_ori_dcm.PixelData = new_dcm_data.tobytes()
+                    slice_ori_dcm.save_as(os.path.join(out_sig_dcm_path, name))
+
         # 是否进行彩色打印
         if args.colors:
             output_img_dir = os.path.join(args.test_output, img_name_to_ext)
@@ -191,27 +202,6 @@ if __name__ == "__main__":
             output = cv2.addWeighted(img, 0.7, image_mask, 0.3, 0)
             color_name = img_name_to_ext + ".png"
             cv2.imwrite(os.path.join(output_img_dir, color_name), output)
-
-    print("----------------第一步：累加所有的预测dcm值--------------------")
-    # output_dcm保存了每个类别的预测dcm值
-    for i in range(len(output_dcm)):
-        result_data = output_dcm[i][0]
-        for j in range(1, len(output_dcm[i])):
-            result_data = np.concatenate((result_data, output_dcm[i][j]), axis=0)
-        output_dcm[i] = result_data
-
-    print("----------------第二步：将预测dcm值替换原始dcm种--------------------")
-    # 将output_dcm种的值替换原来的dcm
-    out_dcm_path = os.path.join(args.test_output, "out_dcm")
-    os.makedirs(out_dcm_path, exist_ok=True)
-    for i in range(len(output_dcm)):
-        out_sig_dcm_path = os.path.join(out_dcm_path, f"{i}")
-        os.makedirs(out_sig_dcm_path, exist_ok=True)
-        for j in range(len(slices_dcm)):
-            slice_ori_dcm = slices_dcm[j]
-            slice_prd_dcm_data = output_dcm[i][j]
-            slice_ori_dcm.PixelData = slice_prd_dcm_data.tobytes()
-            slice_ori_dcm.save_as(os.path.join(out_sig_dcm_path, names[j]))
 
     print("----------------第三步：重建每个牙齿的dcm ==> stl--------------------")
     # 如何将dcm得预测输出直接保存为stl(整体得牙齿stl,单个类别的牙齿stl)

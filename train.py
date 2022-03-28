@@ -20,9 +20,11 @@ import os
 from models.Unet3D import Unet3D
 from models.unet import Unet
 from models.unet_nested import Nested_UNet
+from models.unet3 import Unet3Plus_DeepSup
 from tqdm import tqdm
 import torch.optim as optim
 from metric import loss
+from metric.lovasz_losses import lovasz_softmax
 # from metric.loss import DiceLoss, BCEDiceLoss, GeneralizeDiceLoss
 from metric.metrics import LossAverage, DiceAverage
 from collections import OrderedDict
@@ -74,8 +76,9 @@ def train(net, train_loader, optimizer, criterion, device, scheduler, args):
         # print(batch_masks.shape)
 
         output = net(batch_images)
+        print(len(output))
 
-        if args.dsv:
+        if args.dsv and args.net_name == "Nested_UNet":
             loss0 = criterion(output[0], batch_masks)
             print("loss0:", loss0)
             loss1 = criterion(output[1], batch_masks)
@@ -86,6 +89,20 @@ def train(net, train_loader, optimizer, criterion, device, scheduler, args):
             print("loss3:", loss3)
             # loss = loss3 + 0.4 * (loss0 + loss1 + loss2)
             loss = loss3 + args.alpha * (loss0 + loss1 + loss2)
+        elif args.dsv and args.net_name == "Unet3":
+            print("len output:", len(output))
+            loss0 = criterion(output[0], batch_masks)
+            print("loss0:", loss0)
+            loss1 = criterion(output[1], batch_masks)
+            print("loss1:", loss1)
+            loss2 = criterion(output[2], batch_masks)
+            print("loss2:", loss2)
+            loss3 = criterion(output[3], batch_masks)
+            print("loss3:", loss3)
+            loss4 = criterion(output[4], batch_masks)
+            print("loss4:", loss4)
+
+            loss = loss4 + args.alpha * (loss0 + loss1 + loss2 + loss3)
         else:
             loss = criterion(output, batch_masks)
 
@@ -131,6 +148,8 @@ if __name__ == "__main__":
         net = Unet(in_channels=1, n_labels=args.n_labels).to(device)
     elif args.net_name == "Unet3D":
         net = Unet3D(in_channels=1, n_labels=args.n_labels).to(device)
+    elif args.net_name =="Unet3":
+        net = Unet3Plus_DeepSup(in_channels=1, n_labels=args.n_labels).to(device)
     else:
         net = Nested_UNet(in_channels=1, n_labels=args.n_labels, deepsupervision=args.dsv).to(device)
 
@@ -182,6 +201,8 @@ if __name__ == "__main__":
         criterion = loss.BCEDiceLoss(args, alpha=1, beta=0.5, weight=weights)
     elif args.loss == "FocalLoss":
         criterion = loss.FocalLoss(weight=weights)
+    elif args.loss == "LovaszLoss":
+        criterion = lovasz_softmax
     else:
         criterion = loss.GeneralizeDiceLoss()
 
